@@ -52,6 +52,23 @@
         #retry-btn:hover {
             background-color: #0056b3;
         }
+
+        #control-box {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100px;
+            background-color: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #control-box span {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -59,6 +76,7 @@
 <canvas id="gameCanvas" width="320" height="480"></canvas>
 <div class="score">Top Score: <span id="top-score">0</span></div>
 <button id="retry-btn">Retry</button>
+<div id="control-box"><span>Tap Here to Fly!</span></div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
@@ -90,24 +108,19 @@
         document.getElementById('top-score').innerText = topScore;
     }
 
-    // Control bird jump (with mouse, touch, or spacebar)
+    // Control bird jump only when the control box is clicked or touched
     function jump() {
         if (!gameOver) {
             bird.velocity = bird.jump;
         }
     }
 
-    // Event listeners for mouse, touch, and spacebar
-    document.addEventListener('keydown', function (e) {
-        if (e.code === 'Space') {
-            jump();
-        }
-    });
+    // Add event listeners to the control box
+    const controlBox = document.getElementById('control-box');
+    controlBox.addEventListener('mousedown', jump);
+    controlBox.addEventListener('touchstart', jump);
 
-    document.addEventListener('mousedown', jump);
-    document.addEventListener('touchstart', jump);
-
-    // Retry button
+    // Retry button functionality
     document.getElementById('retry-btn').addEventListener('click', function () {
         resetGame();
     });
