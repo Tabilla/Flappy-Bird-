@@ -9,7 +9,7 @@
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            background-color: #f1f1f1;
+            background-color: #70c5ce;
         }
 
         #game-container {
@@ -18,24 +18,24 @@
             margin: 50px auto;
             background-color: #fff;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
         }
 
         canvas {
             display: block;
             margin: 0 auto;
-            background-image: url('bg.jpg'); /* Set your background image here */
-            background-size: cover;
+            background-color: #70c5ce; /* Blue sky background */
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
         }
 
         #instructions {
             text-align: center;
             margin-top: 20px;
-        }
-
-        h1 {
-            text-align: center;
+            color: white;
         }
     </style>
 </head>
@@ -45,7 +45,7 @@
     <h1>Flappy Bird</h1>
     <canvas id="gameCanvas" width="480" height="640"></canvas>
     <div id="instructions">
-        <p>Press SPACE to make the bird fly!</p>
+        <p>Press SPACE or Tap the Screen to make the bird fly!</p>
     </div>
 </div>
 
@@ -59,101 +59,101 @@
         radius: 15,
         gravity: 0.6,
         velocity: 0,
-        lift: -12
+        lift: -10
     };
 
     const pipes = [];
     const pipeGap = 150;
-    const pipeWidth = 100;
+    const pipeWidth = 60;
     let score = 0;
     let isGameOver = false;
-    let attempts = 0;
-    const maxAttempts = 3;
+    let pipeSpeed = 2;
 
-    // Load bird image
-    const birdImg = new Image();
-    birdImg.src = 'bird.png'; // Set your bird image file path here
-
+    // Draw the bird as a yellow circle
     function drawBird() {
-        ctx.drawImage(birdImg, bird.x - bird.radius, bird.y - bird.radius, bird.radius * 2, bird.radius * 2);
+        ctx.beginPath();
+        ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'yellow';
+        ctx.fill();
+        ctx.closePath();
     }
 
-    // Load pipe image
-    const pipeImg = new Image();
-    pipeImg.src = 'pipe.png'; // Set your pipe image file path here
-
+    // Draw the pipes as green rectangles
     function drawPipes() {
-        for (let i = 0; i < pipes.length; i++) {
-            const pipe = pipes[i];
-            ctx.drawImage(pipeImg, pipe.x, 0, pipeWidth, pipe.topHeight);
-            ctx.drawImage(pipeImg, pipe.x, pipe.topHeight + pipeGap, pipeWidth, canvas.height - pipe.topHeight - pipeGap);
-        }
+        pipes.forEach(pipe => {
+            ctx.fillStyle = 'green';
+            // Top pipe
+            ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
+            // Bottom pipe
+            ctx.fillRect(pipe.x, pipe.topHeight + pipeGap, pipeWidth, canvas.height - pipe.topHeight - pipeGap);
+        });
     }
 
+    // Update the pipes' positions and generate new ones
     function updatePipes() {
+        // Generate new pipes
         if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 300) {
             let topHeight = Math.random() * (canvas.height - pipeGap - 50) + 50;
             pipes.push({ x: canvas.width, topHeight: topHeight });
         }
 
-        for (let i = 0; i < pipes.length; i++) {
-            pipes[i].x -= 2;
+        // Move pipes and check for collisions
+        pipes.forEach((pipe, index) => {
+            pipe.x -= pipeSpeed;
 
-            // Check if bird hits the pipe
+            // Check if the bird hits the pipes
             if (
-                bird.x + bird.radius > pipes[i].x &&
-                bird.x - bird.radius < pipes[i].x + pipeWidth &&
-                (bird.y - bird.radius < pipes[i].topHeight || bird.y + bird.radius > pipes[i].topHeight + pipeGap)
+                bird.x + bird.radius > pipe.x &&
+                bird.x - bird.radius < pipe.x + pipeWidth &&
+                (bird.y - bird.radius < pipe.topHeight || bird.y + bird.radius > pipe.topHeight + pipeGap)
             ) {
                 gameOver();
             }
 
-            // Remove offscreen pipes
-            if (pipes[i].x + pipeWidth < 0) {
-                pipes.splice(i, 1);
+            // Remove pipes when they leave the screen
+            if (pipe.x + pipeWidth < 0) {
+                pipes.splice(index, 1);
                 score++;
             }
-        }
+        });
     }
 
+    // Update the bird's position
     function updateBird() {
         bird.velocity += bird.gravity;
         bird.y += bird.velocity;
 
+        // Prevent bird from going through the top or bottom of the screen
         if (bird.y + bird.radius >= canvas.height || bird.y - bird.radius <= 0) {
             gameOver();
         }
     }
 
+    // Draw the score
     function drawScore() {
         ctx.font = '30px Arial';
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = 'white';
         ctx.fillText('Score: ' + score, 20, 50);
     }
 
+    // End the game and display a message
     function gameOver() {
         isGameOver = true;
-        attempts++;
-
-        if (attempts >= maxAttempts) {
-            ctx.font = '50px Arial';
-            ctx.fillStyle = '#000';
-            ctx.fillText('Game Over', canvas.width / 2 - 150, canvas.height / 2);
-        } else {
-            ctx.font = '30px Arial';
-            ctx.fillStyle = '#000';
-            ctx.fillText('Press SPACE to Restart', canvas.width / 2 - 150, canvas.height / 2);
-        }
+        ctx.font = '50px Arial';
+        ctx.fillStyle = '#000';
+        ctx.fillText('Game Over', canvas.width / 2 - 150, canvas.height / 2);
 
         document.addEventListener('keydown', restartListener);
+        canvas.addEventListener('touchstart', restartListener);
     }
 
-    function restartListener(e) {
-        if (e.key === ' ' && attempts < maxAttempts) {
-            restartGame();
-        }
+    function restartListener() {
+        document.removeEventListener('keydown', restartListener);
+        canvas.removeEventListener('touchstart', restartListener);
+        restartGame();
     }
 
+    // Restart the game
     function restartGame() {
         pipes.length = 0;
         bird.y = canvas.height / 2;
@@ -163,12 +163,26 @@
         gameLoop();
     }
 
-    document.addEventListener('keydown', function (e) {
-        if (e.key === ' ' && !isGameOver) {
+    // Event listener for jumping (space or screen touch)
+    function jump() {
+        if (!isGameOver) {
             bird.velocity = bird.lift;
+        }
+    }
+
+    // Jump on spacebar press
+    document.addEventListener('keydown', function (e) {
+        if (e.code === 'Space') {
+            jump();
         }
     });
 
+    // Jump on screen touch
+    canvas.addEventListener('touchstart', function () {
+        jump();
+    });
+
+    // Main game loop
     function gameLoop() {
         if (isGameOver) return;
 
@@ -183,7 +197,7 @@
         requestAnimationFrame(gameLoop);
     }
 
-    // Start the game loop
+    // Start the game
     gameLoop();
 </script>
 
