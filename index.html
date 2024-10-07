@@ -3,91 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple AI Chatbot</title>
+    <title>Flappy Bird</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            margin: 0;
+            background-color: #70c5ce;
+            font-family: Arial, sans-serif;
         }
 
-        #chatbot-container {
-            background-color: #fff;
-            width: 400px;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        canvas {
+            background-color: #70c5ce;
+            border: 1px solid #000;
         }
 
-        #chat-output {
-            height: 200px;
-            overflow-y: scroll;
-            padding: 10px;
-            border: 1px solid #ccc;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            background-color: #f9f9f9;
+        .score {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
         }
 
-        #chat-output p {
-            margin: 5px 0;
-        }
-
-        #user-input {
-            width: calc(100% - 100px);
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-
-        #send-btn {
-            padding: 10px 20px;
+        #retry-btn {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background-color: #007bff;
             color: white;
+            padding: 10px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-size: 18px;
         }
 
-        #send-btn:hover {
+        #retry-btn:hover {
             background-color: #0056b3;
         }
     </style>
 </head>
 <body>
 
-<div id="chatbot-container">
-    <div id="chat-output"></div>
-    <input type="text" id="user-input" placeholder="Ask a question...">
-    <button id="send-btn">Send</button>
-</div>
+<canvas id="gameCanvas" width="320" height="480"></canvas>
+<div class="score">Top Score: <span id="top-score">0</span></div>
+<button id="retry-btn">Retry</button>
 
 <script>
-    const responses = {
-        "hello": "Hi! How can I help you today?",
-        "how are you": "I'm just a bunch of code, but thanks for asking!",
-        "what is your name": "I'm an AI chatbot created by you!",
-        "default": "I'm sorry, I don't understand that. Can you ask something else?"
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const bird = {
+        x: 50,
+        y: 150,
+        width: 20,
+        height: 20,
+        gravity: 0.5,
+        velocity: 0,
+        jump: -10
     };
 
-    document.getElementById('send-btn').addEventListener('click', function() {
-        const userInput = document.getElementById('user-input').value.toLowerCase();
-        const chatOutput = document.getElementById('chat-output');
+    let pipes = [];
+    const pipeWidth = 40;
+    const pipeGap = 150;
+    const pipeSpeed = 2;
 
-        let response = responses[userInput] || responses["default"];
-        chatOutput.innerHTML += `<p><strong>You:</strong> ${userInput}</p>`;
-        chatOutput.innerHTML += `<p><strong>Bot:</strong> ${response}</p>`;
+    let score = 0;
+    let topScore = 0;
+    let gameOver = false;
+    let pipeTimer = 0;
 
-        // Scroll to the bottom of the chat output
-        chatOutput.scrollTop = chatOutput.scrollHeight;
+    // Load top score from local storage
+    if (localStorage.getItem('topScore')) {
+        topScore = parseInt(localStorage.getItem('topScore'));
+        document.getElementById('top-score').innerText = topScore;
+    }
 
-        // Clear input field
-        document.getElementById('user-input').value = '';
+    // Control bird jump
+    document.addEventListener('keydown', function (e) {
+        if (e.code === 'Space' && !gameOver) {
+            bird.velocity = bird.jump;
+        }
     });
+
+    // Retry button
+    document.getElementById('retry-btn').addEventListener('click', function () {
+        resetGame();
+    });
+
+    function resetGame() {
+        bird.y = 150;
+        bird.velocity = 0;
+        pipes = [];
+        score = 0;
+        gameOver = false;
+        document.getElementById('retry-btn').style.display = 'none';
+        gameLoop();
+    }
+
+    function gameLoop() {
+        if (gameOver) return;
+
+        update();
+        draw();
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function update() {
+        // Update bird
+        bird.velocity += bird.gravity;
+        bird.y += bird.velocity;
+
+        // Update pipes
+        pipeTimer++;
+        if (pipeTimer % 100 === 0) {
+            let pipeY = Math.floor(Math.random() * (canvas.height - pipeGap - 50)) + 25;
+            pipes.push({ x: canvas.width, y: pipeY });
+        }
+
+        pipes.forEach((pipe, index) => {
+            pipe.x -= pipeSpeed;
+
+            // Check collision with pipes
+            if (bird.x + bird.width > pipe.x && bird.x < pipe.x + pipeWidth &&
+                (bird.y < pipe.y || bird.y + bird.height > pipe.y + pipeGap)) {
+                endGame();
+            }
+
+            // Remove pipe if off-screen
+            if (pipe.x + pipeWidth < 0) {
+                pipes.splice(index, 1);
+            }
+        });
+
+        // Check collision with ground or ceiling
+        if (bird.y + bird.height > canvas.height || bird.y < 0) {
+            endGame();
+        }
+
+        // Update score
+        score += 1 / 60;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw bird
+        ctx.fillStyle = 'yellow';
+        ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+
+        // Draw pipes
+        ctx.fillStyle = 'green';
+        pipes.forEach(pipe => {
+            ctx.fillRect(pipe.x, 0, pipeWidth, pipe.y);
+            ctx.fillRect(pipe.x, pipe.y + pipeGap, pipeWidth, canvas.height - pipe.y - pipeGap);
+        });
+
+        // Draw score
+        ctx.fillStyle = 'white';
+        ctx.font = '20px Arial';
+        ctx.fillText('Score: ' + Math.floor(score), 10, 20);
+    }
+
+    function endGame() {
+        gameOver = true;
+
+        // Update top score
+        if (Math.floor(score) > topScore) {
+            topScore = Math.floor(score);
+            localStorage.setItem('topScore', topScore);
+            document.getElementById('top-score').innerText = topScore;
+        }
+
+        // Show retry button
+        document.getElementById('retry-btn').style.display = 'block';
+    }
+
+    // Start game loop
+    gameLoop();
 </script>
 
 </body>
