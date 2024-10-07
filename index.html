@@ -90,12 +90,22 @@
         document.getElementById('top-score').innerText = topScore;
     }
 
-    // Control bird jump
-    document.addEventListener('keydown', function (e) {
-        if (e.code === 'Space' && !gameOver) {
+    // Control bird jump (with mouse, touch, or spacebar)
+    function jump() {
+        if (!gameOver) {
             bird.velocity = bird.jump;
         }
+    }
+
+    // Event listeners for mouse, touch, and spacebar
+    document.addEventListener('keydown', function (e) {
+        if (e.code === 'Space') {
+            jump();
+        }
     });
+
+    document.addEventListener('mousedown', jump);
+    document.addEventListener('touchstart', jump);
 
     // Retry button
     document.getElementById('retry-btn').addEventListener('click', function () {
